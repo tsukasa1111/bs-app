@@ -15,7 +15,7 @@ export function EnhancedOptionPricer() {
     <Card className="w-full max-w-4xl mx-auto my-8 p-6">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center mb-4">
-          高度なオプション価格計算機
+          オプション価格計算機
         </CardTitle>
       </CardHeader>
       <CardContent>
