@@ -221,22 +221,25 @@ export function ForexOptionPricer() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <div className="flex justify-center space-x-2">
+            <div className="flex flex-wrap justify-center gap-2">
               <Button 
                 variant={model === 'blackScholes' ? 'default' : 'outline'} 
                 onClick={() => setModel('blackScholes')}
+                className="mb-2 sm:mb-0"
               >
                 ブラックショールズ
               </Button>
               <Button 
                 variant={model === 'monteCarlo' ? 'default' : 'outline'} 
                 onClick={() => setModel('monteCarlo')}
+                className="mb-2 sm:mb-0"
               >
                 モンテカルロ
               </Button>
               <Button 
                 variant={model === 'binomial' ? 'default' : 'outline'} 
                 onClick={() => setModel('binomial')}
+                className="mb-2 sm:mb-0"
               >
                 バイノミアル
               </Button>
