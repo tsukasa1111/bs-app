@@ -77,8 +77,8 @@ export function StockOptionPricer() {
     let callSum = 0
     let putSum = 0
     for (let i = 0; i < simulations; i++) {
-      const Z = Math.random()
-      const ST = S * Math.exp((r - 0.5 * sigma ** 2) * T + sigma * Math.sqrt(T) * inverseNormalCDF(Z))
+      const Z = inverseNormalCDF()
+      const ST = S * Math.exp((r - 0.5 * sigma ** 2) * T + sigma * Math.sqrt(T) * Z)
       const call = Math.max(ST - K, 0)
       const put = Math.max(K - ST, 0)
       callSum += call
@@ -95,13 +95,13 @@ export function StockOptionPricer() {
     const d = 1 / u
     const p = (Math.exp(r * dt) - d) / (u - d)
 
-    let assetPrices: number[] = []
+    const assetPrices: number[] = []
     for (let i = 0; i <= steps; i++) {
       assetPrices.push(S * Math.pow(u, steps - i) * Math.pow(d, i))
     }
 
-    let callValues: number[] = assetPrices.map(price => Math.max(price - K, 0))
-    let putValues: number[] = assetPrices.map(price => Math.max(K - price, 0))
+    const callValues: number[] = assetPrices.map(price => Math.max(price - K, 0))
+    const putValues: number[] = assetPrices.map(price => Math.max(K - price, 0))
 
     for (let step = steps - 1; step >= 0; step--) {
       for (let i = 0; i <= step; i++) {
@@ -125,8 +125,8 @@ export function StockOptionPricer() {
       S_t = S
       v_t = v0
       for (let t = 0; t < steps; t++) {
-        const Z_S = inverseNormalCDF(Math.random())
-        const Z_v = rho * Z_S + Math.sqrt(1 - rho * rho) * inverseNormalCDF(Math.random())
+        const Z_S = inverseNormalCDF()
+        const Z_v = rho * Z_S + Math.sqrt(1 - rho * rho) * inverseNormalCDF()
         
         S_t = S_t * Math.exp((r - 0.5 * v_t) * dt + Math.sqrt(v_t * dt) * Z_S)
         v_t = Math.max(v_t + kappa * (theta - v_t) * dt + xi * Math.sqrt(v_t * dt) * Z_v, 0)
@@ -140,10 +140,10 @@ export function StockOptionPricer() {
     return { callPrice, putPrice }
   }, [])
 
-  const inverseNormalCDF = (p: number): number => {
-    let u1 = Math.random()
-    let u2 = Math.random()
-    let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2)
+  const inverseNormalCDF = (): number => {
+    const u1 = Math.random()
+    const u2 = Math.random()
+    const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2)
     return z0
   }
 

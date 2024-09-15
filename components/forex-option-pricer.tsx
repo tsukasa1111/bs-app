@@ -50,8 +50,8 @@ export function ForexOptionPricer() {
     }
   }
 
-  const calculateVolatility = useCallback((low: number, high: number, S: number, T: number): number => {
-    if (low <= 0 || high <= 0 || S <= 0 || T <= 0) {
+  const calculateVolatility = useCallback((low: number, high: number, R: number, T: number): number => {
+    if (low <= 0 || high <= 0 || R <= 0 || T <= 0) {
       throw new Error("為替レートと期間は正の値である必要があります。")
     }
     return Math.log(high / low) / (2 * Math.sqrt(T))
@@ -65,24 +65,24 @@ export function ForexOptionPricer() {
     return prob
   }, [])
 
-  const calculateBlackScholes = useCallback((S: number, K: number, T: number, r: number, sigma: number) => {
-    const d1 = (Math.log(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * Math.sqrt(T))
+  const calculateBlackScholes = useCallback((R: number, K: number, T: number, r: number, sigma: number) => {
+    const d1 = (Math.log(R / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * Math.sqrt(T))
     const d2 = d1 - sigma * Math.sqrt(T)
 
-    const callPrice = S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2)
-    const putPrice = K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1)
+    const callPrice = R * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2)
+    const putPrice = K * Math.exp(-r * T) * normalCDF(-d2) - R * normalCDF(-d1)
 
     return { callPrice, putPrice }
   }, [normalCDF])
 
-  const calculateMonteCarlo = useCallback((S: number, K: number, T: number, r: number, sigma: number, simulations: number = 10000) => {
+  const calculateMonteCarlo = useCallback((R: number, K: number, T: number, r: number, sigma: number, simulations: number = 10000) => {
     let callSum = 0
     let putSum = 0
     for (let i = 0; i < simulations; i++) {
-      const Z = inverseNormalCDF(Math.random())
-      const ST = S * Math.exp((r - 0.5 * sigma ** 2) * T + sigma * Math.sqrt(T) * Z)
-      const call = Math.max(ST - K, 0)
-      const put = Math.max(K - ST, 0)
+      const Z = inverseNormalCDF()
+      const RT = R * Math.exp((r - 0.5 * sigma ** 2) * T + sigma * Math.sqrt(T) * Z)
+      const call = Math.max(RT - K, 0)
+      const put = Math.max(K - RT, 0)
       callSum += call
       putSum += put
     }
@@ -91,19 +91,19 @@ export function ForexOptionPricer() {
     return { callPrice, putPrice }
   }, [])
 
-  const calculateBinomial = useCallback((S: number, K: number, T: number, r: number, sigma: number, steps: number = 100) => {
+  const calculateBinomial = useCallback((R: number, K: number, T: number, r: number, sigma: number, steps: number = 100) => {
     const dt = T / steps
     const u = Math.exp(sigma * Math.sqrt(dt))
     const d = 1 / u
     const p = (Math.exp(r * dt) - d) / (u - d)
 
-    let assetPrices: number[] = []
+    const assetPrices: number[] = []
     for (let i = 0; i <= steps; i++) {
-      assetPrices.push(S * Math.pow(u, steps - i) * Math.pow(d, i))
+      assetPrices.push(R * Math.pow(u, steps - i) * Math.pow(d, i))
     }
 
-    let callValues: number[] = assetPrices.map(price => Math.max(price - K, 0))
-    let putValues: number[] = assetPrices.map(price => Math.max(K - price, 0))
+    const callValues: number[] = assetPrices.map(price => Math.max(price - K, 0))
+    const putValues: number[] = assetPrices.map(price => Math.max(K - price, 0))
 
     for (let step = steps - 1; step >= 0; step--) {
       for (let i = 0; i <= step; i++) {
@@ -115,26 +115,26 @@ export function ForexOptionPricer() {
     return { callPrice: callValues[0], putPrice: putValues[0] }
   }, [])
 
-  const calculateHeston = useCallback((S: number, K: number, T: number, r: number, v0: number, kappa: number, theta: number, xi: number, rho: number, steps: number = 100) => {
+  const calculateHeston = useCallback((R: number, K: number, T: number, r: number, v0: number, kappa: number, theta: number, xi: number, rho: number, steps: number = 100) => {
     const dt = T / steps
-    let S_t = S
+    let R_t = R
     let v_t = v0
     let callSum = 0
     let putSum = 0
     const simulations = 10000
 
     for (let sim = 0; sim < simulations; sim++) {
-      S_t = S
+      R_t = R
       v_t = v0
       for (let t = 0; t < steps; t++) {
-        const Z_S = inverseNormalCDF(Math.random())
-        const Z_v = rho * Z_S + Math.sqrt(1 - rho * rho) * inverseNormalCDF(Math.random())
+        const Z_R = inverseNormalCDF()
+        const Z_v = rho * Z_R + Math.sqrt(1 - rho * rho) * inverseNormalCDF()
         
-        S_t = S_t * Math.exp((r - 0.5 * v_t) * dt + Math.sqrt(v_t * dt) * Z_S)
+        R_t = R_t * Math.exp((r - 0.5 * v_t) * dt + Math.sqrt(v_t * dt) * Z_R)
         v_t = Math.max(v_t + kappa * (theta - v_t) * dt + xi * Math.sqrt(v_t * dt) * Z_v, 0)
       }
-      callSum += Math.max(S_t - K, 0)
-      putSum += Math.max(K - S_t, 0)
+      callSum += Math.max(R_t - K, 0)
+      putSum += Math.max(K - R_t, 0)
     }
 
     const callPrice = Math.exp(-r * T) * (callSum / simulations)
@@ -142,10 +142,10 @@ export function ForexOptionPricer() {
     return { callPrice, putPrice }
   }, [])
 
-  const inverseNormalCDF = (p: number): number => {
-    let u1 = Math.random()
-    let u2 = Math.random()
-    let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2)
+  const inverseNormalCDF = (): number => {
+    const u1 = Math.random()
+    const u2 = Math.random()
+    const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2)
     return z0
   }
 
